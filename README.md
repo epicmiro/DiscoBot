@@ -5,7 +5,7 @@ DiscoBot uses the [Discord.NET](https://github.com/RogueException/Discord.Net) A
 
 ###Features
 - Soundcloud/Youtube audio playback in voice chat.
-- Roll Command (Roll between 0-100)
+- Shoutcast Radio streaming in voice chat.
 
 ### Compiling
 In order to compile Discord.Net, you require at least the following:

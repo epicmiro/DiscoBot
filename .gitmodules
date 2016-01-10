@@ -1,0 +1,4 @@
+[submodule "Discord.Net"]
+	path = Discord.Net
+	url = https://github.com/RogueException/Discord.Net.git
+	branch = dev

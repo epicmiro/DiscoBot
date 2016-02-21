@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using DiscoBot.Modules.Troll;
 using DiscoBot.Modules.Radio;
 using DiscoBot.Modules.Rainbow;
+using DiscoBot.Modules.Admin;
 
 namespace DiscoBot
 {
@@ -16,7 +17,7 @@ namespace DiscoBot
     {
         //Discord.NET Api.
         public DiscordClient Client;
-        public DiscordConfig Config;
+        DiscordConfigBuilder Builder;
 
         public DiscoBot()
         {
@@ -24,13 +25,20 @@ namespace DiscoBot
             LoadConfiguration();
                   
             //Create our client.
-            Client = new DiscordClient(Config);
+            Client = new DiscordClient((x =>
+            {
+                x.AppName = "DiscoBot";
+                x.AppUrl = "https://github.com/epicmiro/DiscoBot";
+                x.AppVersion = DiscordConfig.LibVersion;
+                x.MessageCacheSize = 0;
+                x.UsePermissionsCache = false;
+                x.EnablePreUpdateEvents = true;
+                x.LogLevel = LogSeverity.Info;
+                x.LogHandler = OnLogMessage;
+            }));
 
             //Load Modules.
             LoadModules();
-
-            //Enable Error Logging.
-            EnableLogging();
                                 
             //Set console title.
             Console.Title = $"{Client.Config.AppName} v{Client.Config.AppVersion} (Discord.Net v{DiscordConfig.LibVersion})";
@@ -41,63 +49,42 @@ namespace DiscoBot
             //Load our configuration file.
             DisConfig.Load();
             DisConfig.Save();
-
-            //Set up our discord configuration.
-            Config = new DiscordConfig();
-            Config.AppName = "DiscoBot";
-            Config.AppUrl = "https://github.com/epicmiro/DiscoBot";
-            Config.AppVersion = DiscordConfig.LibVersion;
-            Config.LogLevel = LogSeverity.Info;
-            Config.CacheToken = true;
         }
 
         public void LoadModules()
         {
             //Enable commands on this bot.
-            Client.UsingCommands(new CommandServiceConfig()
+            Client.UsingCommands(x =>
             {
-                CommandChar = '!',
-                HelpMode = HelpMode.Public
+                x.AllowMentionPrefix = true;
+                x.HelpMode = HelpMode.Public;
+                x.ExecuteHandler = OnCommandExecuted;
+                x.ErrorHandler = OnCommandError;
             });
 
             //Enable modules on this bot.
             Client.UsingModules();
 
             //Enable audio on this bot.
-            Client.UsingAudio(new AudioServiceConfig()
+            Client.UsingAudio(x =>
             {
-                Mode = AudioMode.Outgoing,
-                EnableMultiserver = false,
-                Channels = 2
+                x.Mode = AudioMode.Outgoing;
+                x.EnableMultiserver = true;
+                x.EnableEncryption = true;
             });
 
             //Register our custom modules.
             Client.AddModule<MusicModule>("Music", ModuleFilter.None);
             Client.AddModule<RadioModule>("Radio", ModuleFilter.None);
-            Client.AddModule<RainbowModule>("Rainbow", ModuleFilter.None);
+            Client.AddModule<AdminModule>("Admin", ModuleFilter.None);
             Client.AddModule<TrollModule>("Troll", ModuleFilter.None);
 
-        }
-
-        private void EnableLogging()
-        {
-            //Enable message logging.
-            Client.Log.Message += (s, e) => LogMessage(e);
-
-            //Enable command error logging.
-            Client.Commands().CommandErrored += (s, e) =>
-            {
-                string message = e.Exception?.GetBaseException().Message;
-
-                if (message != null)
-                    Client.Log.Error("Command", e.Exception.ToString());
-            };
         }
 
         public void Run()
         {
             //Now run our client asynchronously.
-            Client.Run(async () =>
+            Client.ExecuteAndWait(async () =>
             {
                 while (true)
                 {
@@ -116,7 +103,43 @@ namespace DiscoBot
         }
 
         //Log any messages. Copied from DiscordBot (https://github.com/RogueException/DiscordBot)
-        private void LogMessage(LogMessageEventArgs e)
+        //Display errors that occur when a user tries to run a command
+        //(In this case, we hide argcount, parsing and unknown command errors to reduce spam in servers with multiple bots)
+        private void OnCommandError(object sender, CommandErrorEventArgs e)
+        {
+            string msg = e.Exception?.GetBaseException().Message;
+            if (msg == null) //No exception - show a generic message
+            {
+                switch (e.ErrorType)
+                {
+                    case CommandErrorType.Exception:
+                        //msg = "Unknown error.";
+                        break;
+                    case CommandErrorType.BadPermissions:
+                        msg = "You do not have permission to run this command.";
+                        break;
+                    case CommandErrorType.BadArgCount:
+                        //msg = "You provided the incorrect number of arguments for this command.";
+                        break;
+                    case CommandErrorType.InvalidInput:
+                        //msg = "Unable to parse your command, please check your input.";
+                        break;
+                    case CommandErrorType.UnknownCommand:
+                        //msg = "Unknown command.";
+                        break;
+                }
+            }
+            if (msg != null)
+            {
+                Client.Log.Error("Command", msg);
+            }
+        }
+        private void OnCommandExecuted(object sender, CommandEventArgs e)
+        {
+            Client.Log.Info("Command", $"{e.Command.Text} ({e.User.Name})");
+        }
+
+        private void OnLogMessage(object sender, LogMessageEventArgs e)
         {
             //Color
             ConsoleColor color;
@@ -179,6 +202,7 @@ namespace DiscoBot
 
             Console.ForegroundColor = color;
             Console.WriteLine(text);
+
         }
     }
 }

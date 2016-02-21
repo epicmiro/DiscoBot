@@ -102,7 +102,9 @@ namespace DiscoBot.Modules.Music
                         using (var resampler = new MediaFoundationResampler(reader, outFormat))
                         {
                             resampler.ResamplerQuality = 60;
-                            WaveFileWriter.CreateWaveFile(outFile, resampler);
+                            VolumeWaveProvider16 vol = new VolumeWaveProvider16(resampler);
+                            vol.Volume = 0.3f;
+                            WaveFileWriter.CreateWaveFile(outFile, vol);
                         }
                     }
 
@@ -157,7 +159,9 @@ namespace DiscoBot.Modules.Music
                         using (var resampler = new MediaFoundationResampler(reader, outFormat))
                         {
                             resampler.ResamplerQuality = 60;
-                            WaveFileWriter.CreateWaveFile(outFile, resampler);
+                            VolumeWaveProvider16 vol = new VolumeWaveProvider16(resampler);
+                            vol.Volume = 0.3f;
+                            WaveFileWriter.CreateWaveFile(outFile, vol);
                         }
                     }
 
@@ -195,7 +199,7 @@ namespace DiscoBot.Modules.Music
            
             if (room.Any())
             {
-                await _client.Audio().Join(room.First());
+                await _client.GetService<AudioService>().Join(room.First());
                 _queue.PlayNextMusicToAllVoiceClients();
             }
             else
@@ -206,7 +210,7 @@ namespace DiscoBot.Modules.Music
 
         public async Task LeaveVoiceCommand(CommandEventArgs e)
         {
-            await _client.Audio().Leave(e.Server);
+            await _client.GetService<AudioService>().Leave(e.Server);
         }
     }
 }

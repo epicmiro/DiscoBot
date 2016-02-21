@@ -31,8 +31,6 @@ namespace DiscoBot.Modules.Radio
 
         private IAudioClient _client;
 
-        HttpWebRequest request = null; // web request
-
         public RadioStream(string a_Server)
         {
             //create a radio stream object with the specified shoutcast url.
@@ -171,10 +169,14 @@ namespace DiscoBot.Modules.Radio
                         int blocksize = resampler.WaveFormat.AverageBytesPerSecond / 5;
                         byte[] buffer = new byte[blocksize];
 
+                    VolumeWaveProvider16 vol = new VolumeWaveProvider16(resampler);
+                    vol.Volume = 0.3f;
+
                     while (bufferedWaveProvider.BufferedBytes > bufferedWaveProvider.WaveFormat.AverageBytesPerSecond / 5 && playbackState != StreamingPlaybackState.Stopped)
                     {
-                        resampler.Read(buffer, 0, blocksize);
+                        vol.Read(buffer, 0, blocksize);
                         _client.Send(buffer, 0, blocksize);
+                        _client.Wait();
                     }
                 }
             }

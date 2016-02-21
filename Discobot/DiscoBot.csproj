@@ -82,6 +82,7 @@
   <ItemGroup>
     <Compile Include="Configuration.cs" />
     <Compile Include="DiscoBot.cs" />
+    <Compile Include="Modules\Admin\AdminModule.cs" />
     <Compile Include="Modules\Music\MusicModule.cs" />
     <Compile Include="Modules\Music\MusicQueue.cs" />
     <Compile Include="Modules\Radio\RadioModule.cs" />

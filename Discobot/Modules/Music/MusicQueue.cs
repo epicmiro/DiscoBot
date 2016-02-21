@@ -39,7 +39,7 @@ namespace DiscoBot.Modules.Music
 
             foreach (Server server in Disco.Bot.Client.Servers)
             {
-                IAudioClient voiceClient = Disco.Bot.Client.Audio().GetClient(server);
+                IAudioClient voiceClient = Disco.Bot.Client.GetService<AudioService>().GetClient(server);
 
                 if (voiceClient != null)
                 {
